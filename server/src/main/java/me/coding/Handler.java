@@ -14,7 +14,7 @@ public class Handler implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(Handler.class);
 
     private final Listener cast;
-    private final User        user;
+    private final User     user;
 
     private static String generateId() {
         return UUID.randomUUID().toString().substring(0, 8);
