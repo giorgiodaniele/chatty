@@ -7,16 +7,20 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.UUID;
 
+import org.apache.log4j.Logger;
+
 public class Handler implements Runnable {
 
-    private final Broadcaster cast;
+    private static final Logger LOGGER = Logger.getLogger(Handler.class);
+
+    private final Listener cast;
     private final User        user;
 
     private static String generateId() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    public Handler(Socket socket, Broadcaster cast) {
+    public Handler(Socket socket, Listener cast) {
         this.cast = cast;
         this.user = new User(Handler.generateId(), socket);
         this.cast.addUser(this.user);
@@ -51,6 +55,7 @@ public class Handler implements Runnable {
                 if (message.trim().isEmpty()) {
                     continue;
                 }
+                LOGGER.info("Got a message from " + this.user.getSocket().getInetAddress());
                 cast.addMessage("#MESSAGE;" + this.user.getUserId() + ";" + message);
             }
 

@@ -1,3 +1,4 @@
 *.jar
 server/target
 client/target
+.vscode

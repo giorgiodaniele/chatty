@@ -2,6 +2,7 @@ package me.coding;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
@@ -12,11 +13,15 @@ import java.net.Socket;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -41,25 +46,68 @@ public class Client {
     private void startClient() {
         JFrame frame = new JFrame("chatter");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(450, 400);
+        frame.setSize(520, 480);
+        frame.setLocationRelativeTo(null);
 
-        // --- Initialize UI ---
+        /**
+         * 
+         * Initialize client user interface
+         * 
+         */
+        frame.getContentPane().setBackground(new Color(240, 243, 247));
+
         chat = new JTextPane();
         chat.setEditable(false);
         chat.setBackground(Color.WHITE);
-        chat.setFont(new Font("Verdana", Font.PLAIN, 14));
+        chat.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        chat.setBorder(new EmptyBorder(10, 10, 10, 10));
         doc = chat.getStyledDocument();
 
         scroll = new JScrollPane(chat);
-        field  = new JTextField();
-        send   = new JButton("Send");
+        scroll.setBorder(new LineBorder(new Color(200, 200, 200)));
+        scroll.setBackground(Color.WHITE);
 
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        field.setBorder(new CompoundBorder(
+            new LineBorder(new Color(180, 180, 180)),
+            new EmptyBorder(5, 8, 5, 8)
+        ));
+
+        send = new JButton("Send");
+        send.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        send.setBackground(new Color(0, 122, 255));
+        send.setForeground(Color.WHITE);
+        send.setFocusPainted(false);
+        send.setBorder(new EmptyBorder(8, 15, 8, 15));
+        send.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        send.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                send.setBackground(new Color(10, 132, 255));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                send.setBackground(new Color(0, 122, 255));
+            }
+        });
+
+        JPanel bottomPanel = new JPanel(new BorderLayout(8, 0));
+        bottomPanel.setBorder(new EmptyBorder(8, 8, 8, 8));
+        bottomPanel.setBackground(frame.getContentPane().getBackground());
         bottomPanel.add(field, BorderLayout.CENTER);
-        bottomPanel.add(send,   BorderLayout.EAST);
+        bottomPanel.add(send, BorderLayout.EAST);
 
-        frame.add(scroll,      BorderLayout.CENTER);
+        JLabel header = new JLabel(" chatter client", JLabel.LEFT);
+        header.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 16));
+        header.setOpaque(true);
+        header.setBackground(new Color(0, 122, 255));
+        header.setForeground(Color.WHITE);
+        header.setBorder(new EmptyBorder(10, 12, 10, 12));
+
+        frame.add(header, BorderLayout.NORTH);
+        frame.add(scroll, BorderLayout.CENTER);
         frame.add(bottomPanel, BorderLayout.SOUTH);
+
         frame.setVisible(true);
 
         /**
@@ -99,6 +147,10 @@ public class Client {
                     }
                 } catch (IOException e) {
                     appendSystemMessage("Connection lost.");
+                } finally {
+                    appendSystemMessage("Disconnected from server.");
+                    /* exit client loop and close resources */
+                    cleanup();
                 }
             });
 
@@ -123,16 +175,12 @@ public class Client {
 
     private void addMessage(String senderId, String text) {
         SwingUtilities.invokeLater(() -> {
-            // Normalize once for safety
-            String sId = normalize(senderId);
-            String uId = normalize(userId);
-
-            // Is the message for us?
+            String sId     = normalize(senderId);
+            String uId     = normalize(userId);
             boolean isSelf = sId.equalsIgnoreCase(uId);
-            
-            Color color    = isSelf ? new Color(0, 70, 180) : new Color(180, 0, 0);
-            String prefix  = isSelf ? "[you]: " : "[" + sId + "]: ";
 
+            Color color = isSelf ? new Color(0, 122, 255) : new Color(255, 45, 85);
+            String prefix = isSelf ? "You: " : sId + ": ";
             appendColoredText(prefix + text + "\n", color);
         });
     }
@@ -142,17 +190,34 @@ public class Client {
     }
 
     private void appendSystemMessage(String msg) {
-        appendColoredText("[system]: " + msg + "\n", Color.GRAY);
+        appendColoredText("[system] " + msg + "\n", new Color(100, 100, 100));
     }
 
     private void appendColoredText(String msg, Color color) {
         try {
             SimpleAttributeSet attrs = new SimpleAttributeSet();
             StyleConstants.setForeground(attrs, color);
+            StyleConstants.setFontSize(attrs, 14);
             doc.insertString(doc.getLength(), msg, attrs);
             chat.setCaretPosition(doc.getLength());
         } catch (BadLocationException ex) {
             /* ignore any error here */
         }
+    }
+
+    /**
+     * 
+     * Gracefully close client socket and resources
+     * 
+     */
+    private void cleanup() {
+        try {
+            if (in != null) in.close();
+            if (out != null) out.close();
+            if (socket != null && !socket.isClosed()) socket.close();
+        } catch (IOException e) {
+            /* ignore any cleanup error */
+        }
+        /* stop client loop and exit */
     }
 }

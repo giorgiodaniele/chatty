@@ -7,7 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class Broadcaster implements Runnable {
+public class Listener implements Runnable {
 
     private final List<User>            users = new CopyOnWriteArrayList<>();
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
